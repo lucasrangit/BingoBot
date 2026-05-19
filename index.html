@@ -1,56 +1,338 @@
-// ... (rest of the variables remain the same)
-
-function initCard() {
-    cardContainer.innerHTML = '';
-    keywords.forEach((word, index) => {
-        const div = document.createElement('div');
-        div.className = 'cell';
-        div.textContent = word;
-        div.id = `cell-${index}`;
-        div.setAttribute('data-word', word.toLowerCase().trim());
-        
-        // ADDED: Manual Click Listener
-        div.addEventListener('click', () => toggleManualMatch(div));
-        
-        cardContainer.appendChild(div);
-    });
-}
-
-// NEW: Function for manual toggling
-function toggleManualMatch(cell) {
-    const word = cell.textContent;
-    const isNowHighlighted = cell.classList.toggle('highlight');
-    const time = new Date().toLocaleTimeString();
-    
-    // Determine the action for the log
-    const status = isNowHighlighted ? "SET (Manual)" : "RESET (Manual)";
-    const logMsg = `[${time}] ${status}: "${word}"`;
-    
-    // Add to internal log and UI
-    eventLog.push(logMsg);
-    const logEntry = document.createElement('div');
-    logEntry.style.color = "#f39c12"; // Color manual logs differently
-    logEntry.innerHTML = `<strong>${logMsg}</strong>`;
-    
-    document.getElementById('logArea').prepend(logEntry);
-}
-
-// MODIFIED: Voice Matching Logic (to ensure consistency)
-function checkMatch(spokenText) {
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => {
-        const word = cell.getAttribute('data-word');
-        // We only auto-highlight via voice if not already highlighted
-        if (spokenText.includes(word) && !cell.classList.contains('highlight')) {
-            cell.classList.add('highlight');
-            
-            const time = new Date().toLocaleTimeString();
-            const logMsg = `[${time}] Heard: "${spokenText}" (Matched: ${word})`;
-            
-            eventLog.push(logMsg);
-            const logEntry = document.createElement('div');
-            logEntry.textContent = logMsg;
-            document.getElementById('logArea').prepend(logEntry);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Bingo Pro</title>
+    <!-- OCR Library -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #27ae60;
+            --manual: #f39c12;
+            --danger: #e74c3c;
+            --bg: #f4f7f6;
+            --dark: #2c3e50;
         }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            color: var(--dark);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { margin-bottom: 10px; font-size: 24px; }
+
+        .status-bar {
+            height: 24px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-cam { background-color: var(--manual); }
+        .btn-file { background-color: #8e44ad; }
+        .btn-start { background-color: var(--primary); }
+        .btn-stop { background-color: var(--danger); }
+        .btn-download { background-color: #7f8c8d; grid-column: span 2; }
+
+        /* Bingo Card */
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .cell {
+            aspect-ratio: 1/1;
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            word-break: break-word;
+            padding: 2px;
+        }
+
+        .cell.highlight {
+            background-color: var(--success);
+            color: white;
+            border-color: #1e8449;
+        }
+
+        /* Log Area */
+        .log-container {
+            width: 100%;
+            margin-top: 20px;
+            background: var(--dark);
+            color: #ecf0f1;
+            border-radius: 8px;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+
+        .log-container h3 { margin-top: 0; font-size: 14px; color: #bdc3c7; }
+
+        #logArea {
+            height: 150px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .log-manual { color: var(--manual); font-weight: bold; }
+        .log-voice { color: #5dade2; }
+
+        #imagePreview {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            display: none;
+            margin-bottom: 15px;
+            border: 2px solid white;
+        }
+
+        .loader {
+            display: none;
+            color: var(--manual);
+            font-weight: bold;
+            margin-bottom: 10px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Voice Bingo</h1>
+    <div id="status" class="status-bar">Ready to play</div>
+
+    <div class="controls">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+
+        <button class="btn-cam" onclick="document.getElementById('cameraInput').click()">📷 Camera</button>
+        <button class="btn-file" onclick="document.getElementById('fileInput').click()">📁 Upload</button>
+        
+        <button id="startBtn" class="btn-start">🎤 Start Voice</button>
+        <button id="stopBtn" class="btn-stop" disabled>Stop</button>
+        
+        <button id="downloadBtn" class="btn-download">💾 Download Log (.txt)</button>
+    </div>
+
+    <div id="loader" class="loader">Scanning Bingo Card...</div>
+    <img id="imagePreview" alt="Preview">
+
+    <div class="bingo-grid" id="bingoGrid">
+        <!-- JS generates cells here -->
+    </div>
+
+    <div class="log-container">
+        <h3>Activity Log</h3>
+        <div id="logArea"></div>
+    </div>
+</div>
+
+<script>
+    // 1. App State
+    let keywords = ["B1", "B2", "B3", "B4", "B5", "I1", "I2", "I3", "I4", "I5", "N1", "N2", "FREE", "N4", "N5", "G1", "G2", "G3", "G4", "G5", "O1", "O2", "O3", "O4", "O5"];
+    let eventLog = [];
+    let recognition;
+
+    const grid = document.getElementById('bingoGrid');
+    const status = document.getElementById('status');
+    const logArea = document.getElementById('logArea');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+
+    // 2. Initialize Grid
+    function initCard() {
+        grid.innerHTML = '';
+        keywords.forEach((word, index) => {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.textContent = word;
+            cell.id = `cell-${index}`;
+            cell.setAttribute('data-clean', word.toLowerCase().trim());
+            
+            // Manual Click Logic
+            cell.addEventListener('click', () => toggleManual(cell));
+            
+            grid.appendChild(cell);
+        });
+    }
+
+    // 3. OCR Image Processing
+    async function handleImage(file) {
+        if (!file) return;
+
+        const preview = document.getElementById('imagePreview');
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+        
+        document.getElementById('loader').style.display = 'block';
+        status.textContent = "Analyzing image...";
+
+        try {
+            const result = await Tesseract.recognize(file, 'eng');
+            const found = result.data.text
+                .split(/[\s\n]+/)
+                .map(w => w.replace(/[^a-zA-Z0-9]/g, ''))
+                .filter(w => w.length > 1);
+
+            if (found.length >= 5) {
+                keywords = found.slice(0, 25);
+                initCard();
+                status.textContent = `Card updated: ${found.length} words found.`;
+                addLog("System", `Card updated via OCR scan.`, "log-voice");
+            } else {
+                alert("Couldn't read enough text. Try a clearer photo.");
+                status.textContent = "OCR Failed.";
+            }
+        } catch (e) {
+            console.error(e);
+            status.textContent = "OCR Error.";
+        } finally {
+            document.getElementById('loader').style.display = 'none';
+        }
+    }
+
+    document.getElementById('cameraInput').addEventListener('change', (e) => handleImage(e.target.files[0]));
+    document.getElementById('fileInput').addEventListener('change', (e) => handleImage(e.target.files[0]));
+
+    // 4. Voice Recognition Logic
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => {
+            status.textContent = "Microphone Active";
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+            checkVoiceMatch(transcript);
+        };
+
+        recognition.onend = () => {
+            if (!stopBtn.disabled) recognition.start(); // Auto-restart
+            else status.textContent = "Voice Stopped";
+        };
+    }
+
+    function checkVoiceMatch(text) {
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            const word = cell.getAttribute('data-clean');
+            if (text.includes(word) && !cell.classList.contains('highlight')) {
+                cell.classList.add('highlight');
+                addLog("Voice", `Heard "${text}" -> Matched "${cell.textContent}"`, "log-voice");
+            }
+        });
+    }
+
+    // 5. Manual Interaction
+    function toggleManual(cell) {
+        const active = cell.classList.toggle('highlight');
+        const action = active ? "SET" : "RESET";
+        addLog("Manual", `${action}: "${cell.textContent}"`, "log-manual");
+    }
+
+    // 6. Logging & Exports
+    function addLog(type, message, className) {
+        const time = new Date().toLocaleTimeString();
+        const entry = `[${time}] ${type}: ${message}`;
+        eventLog.push(entry);
+
+        const div = document.createElement('div');
+        div.className = className;
+        div.textContent = entry;
+        logArea.prepend(div);
+    }
+
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+        if (eventLog.length === 0) return alert("Log is empty!");
+        const blob = new Blob([eventLog.join('\n')], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `bingo-log-${Date.now()}.txt`;
+        a.click();
     });
-}
+
+    // 7. Control Buttons
+    startBtn.addEventListener('click', () => recognition.start());
+    stopBtn.addEventListener('click', () => {
+        stopBtn.disabled = true;
+        startBtn.disabled = false;
+        recognition.stop();
+    });
+
+    // Boot the app
+    initCard();
+</script>
+
+</body>
+</html>
