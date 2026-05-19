@@ -3,97 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Bingo & Logger</title>
+    <title>AI Voice Bingo & OCR</title>
+    <!-- Include Tesseract.js for Image Recognition -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        :root {
-            --primary: #4a90e2;
-            --success: #27ae60;
-            --bg: #f4f7f6;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-
-        h1 { color: #333; }
-
-        .controls {
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            transition: opacity 0.2s;
-        }
-
+        :root { --primary: #4a90e2; --success: #27ae60; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .controls { margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        button, label { padding: 10px 20px; font-size: 14px; cursor: pointer; border: none; border-radius: 5px; background: #ddd; transition: 0.2s; }
         #startBtn { background-color: var(--primary); color: white; }
         #stopBtn { background-color: #e74c3c; color: white; }
-        #downloadBtn { background-color: #95a5a6; color: white; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .bingo-card {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            max-width: 500px;
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .cell {
-            width: 80px;
-            height: 80px;
-            border: 2px solid #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            background: #fff;
-            text-transform: capitalize;
-        }
-
-        .cell.highlight {
-            background-color: var(--success);
-            color: white;
-            border-color: #1e8449;
-            transform: scale(1.05);
-        }
-
-        .status {
-            margin-top: 15px;
-            font-style: italic;
-            color: #666;
-        }
-
-        #logArea {
-            margin-top: 20px;
-            width: 100%;
-            max-width: 500px;
-            height: 150px;
-            background: #fff;
-            border: 1px solid #ccc;
-            padding: 10px;
-            overflow-y: scroll;
-            font-family: monospace;
-            font-size: 12px;
-        }
+        #scanBtnLabel { background-color: #f39c12; color: white; }
+        button:disabled { opacity: 0.5; }
+        
+        .bingo-card { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 500px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .cell { width: 75px; height: 75px; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: bold; font-size: 12px; border-radius: 4px; background: #fff; word-break: break-all; padding: 2px; }
+        .cell.highlight { background-color: var(--success); color: white; transform: scale(1.05); }
+        
+        #status { margin: 15px 0; font-weight: bold; color: #444; }
+        #logArea { margin-top: 20px; width: 100%; max-width: 500px; height: 120px; background: #fff; border: 1px solid #ccc; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 11px; }
+        #imagePreview { max-width: 200px; display: none; margin-bottom: 10px; border-radius: 5px; }
+        .loading-overlay { display: none; color: orange; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -101,114 +31,135 @@
     <h1>Voice Bingo</h1>
 
     <div class="controls">
+        <!-- Input for Camera/Image -->
+        <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;">
+        <label id="scanBtnLabel" for="imageInput">📸 Scan/Upload Card</label>
+        
         <button id="startBtn">Start Listening</button>
         <button id="stopBtn" disabled>Stop</button>
         <button id="downloadBtn">Download Log</button>
     </div>
 
-    <div id="status" class="status">Click "Start" to begin...</div>
+    <div id="loading" class="loading-overlay">Scanning image... please wait...</div>
+    <img id="imagePreview" alt="Preview">
+    <div id="status">Ready. Scan a card or use defaults.</div>
 
-    <div class="bingo-card" id="bingoCard">
-        <!-- Cells generated by JS -->
-    </div>
+    <div class="bingo-card" id="bingoCard"></div>
 
     <h3>Activity Log</h3>
     <div id="logArea"></div>
 
     <script>
-        // 1. CONFIGURATION: Define your Bingo keywords here
-        const keywords = [
-            "Apple", "Banana", "Cherry", "Dragonfruit", "Elderberry",
-            "Fig", "Grape", "Honeydew", "Iceberg", "Jackfruit",
-            "Kiwi", "Lemon", "Mango", "Nectarine", "Orange",
-            "Papaya", "Quince", "Raspberry", "Strawberry", "Tomato",
-            "Ugli", "Vanilla", "Watermelon", "Xigua", "Yam"
-        ];
-
+        // Default keywords (used if no image is scanned)
+        let keywords = ["B1", "B2", "B3", "B4", "B5", "I1", "I2", "I3", "I4", "I5", "N1", "N2", "FREE", "N4", "N5", "G1", "G2", "G3", "G4", "G5", "O1", "O2", "O3", "O4", "O5"];
+        
         let recognition;
         let eventLog = [];
         const cardContainer = document.getElementById('bingoCard');
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
-        const logArea = document.getElementById('logArea');
-        const statusDisplay = document.getElementById('status');
+        const imageInput = document.getElementById('imageInput');
+        const loadingMsg = document.getElementById('loading');
 
-        // 2. Initialize the Bingo Card
         function initCard() {
             cardContainer.innerHTML = '';
-            keywords.forEach(word => {
+            keywords.forEach((word, index) => {
                 const div = document.createElement('div');
                 div.className = 'cell';
                 div.textContent = word;
-                div.id = `cell-${word.toLowerCase()}`;
+                div.id = `cell-${index}`;
+                // Set a data attribute for the lowercase version for easier matching
+                div.setAttribute('data-word', word.toLowerCase());
                 cardContainer.appendChild(div);
             });
         }
 
-        // 3. Setup Speech Recognition
+        // --- OCR LOGIC ---
+        imageInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (re) => {
+                const img = document.getElementById('imagePreview');
+                img.src = re.target.result;
+                img.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            loadingMsg.style.display = 'block';
+            document.getElementById('status').textContent = "Processing Image...";
+
+            try {
+                // Perform OCR
+                const result = await Tesseract.recognize(file, 'eng');
+                
+                // Clean up the text: split by lines/spaces and remove symbols
+                let wordsFound = result.data.text
+                    .split(/[\s\n]+/)
+                    .filter(w => w.length > 1) // Ignore tiny fragments
+                    .slice(0, 25); // Take top 25
+
+                if (wordsFound.length > 0) {
+                    keywords = wordsFound;
+                    initCard();
+                    document.getElementById('status').textContent = `Scan Complete. Found ${wordsFound.length} words.`;
+                } else {
+                    alert("Could not detect any clear text. Try a clearer photo.");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error processing image.");
+            } finally {
+                loadingMsg.style.display = 'none';
+            }
+        });
+
+        // --- VOICE LOGIC ---
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
-            
-            recognition.continuous = true;      // Keep listening
-            recognition.interimResults = false; // Only final results
+            recognition.continuous = true;
+            recognition.interimResults = false;
             recognition.lang = 'en-US';
 
+            recognition.onresult = (event) => {
+                const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+                checkMatch(transcript);
+            };
+
             recognition.onstart = () => {
-                statusDisplay.textContent = "Listening for keywords...";
+                document.getElementById('status').textContent = "Listening...";
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
             };
 
-            recognition.onresult = (event) => {
-                const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-                console.log("Heard:", transcript);
-                checkMatch(transcript);
-            };
-
-            recognition.onerror = (event) => {
-                statusDisplay.textContent = "Error: " + event.error;
-            };
-
             recognition.onend = () => {
-                if (!stopBtn.disabled) {
-                    recognition.start(); // Auto-restart if not manually stopped
-                } else {
-                    statusDisplay.textContent = "Stopped.";
-                }
+                if (!stopBtn.disabled) recognition.start();
+                else document.getElementById('status').textContent = "Stopped.";
             };
-        } else {
-            statusDisplay.textContent = "Speech API not supported in this browser.";
-            startBtn.disabled = true;
         }
 
-        // 4. Match and Log Logic
         function checkMatch(spokenText) {
-            keywords.forEach(word => {
-                const lowerWord = word.toLowerCase();
-                // Check if the spoken text contains the keyword
-                if (spokenText.includes(lowerWord)) {
-                    const cell = document.getElementById(`cell-${lowerWord}`);
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                const word = cell.getAttribute('data-word');
+                if (spokenText.includes(word) && !cell.classList.contains('highlight')) {
+                    cell.classList.add('highlight');
                     
-                    if (cell && !cell.classList.contains('highlight')) {
-                        cell.classList.add('highlight');
-                        
-                        // Add to log
-                        const timestamp = new Date().toLocaleTimeString();
-                        const entry = `[${timestamp}] Found keyword: "${word}"`;
-                        eventLog.push(entry);
-                        
-                        const logEntry = document.createElement('div');
-                        logEntry.textContent = entry;
-                        logArea.prepend(logEntry);
-                    }
+                    const timestamp = new Date().toLocaleTimeString();
+                    const entry = `[${timestamp}] Heard: "${spokenText}" -> Matched: "${word}"`;
+                    eventLog.push(entry);
+                    
+                    const logDiv = document.createElement('div');
+                    logDiv.textContent = entry;
+                    document.getElementById('logArea').prepend(logDiv);
                 }
             });
         }
 
-        // 5. Controls
         startBtn.addEventListener('click', () => recognition.start());
-        
         stopBtn.addEventListener('click', () => {
             stopBtn.disabled = true;
             startBtn.disabled = false;
@@ -216,17 +167,14 @@
         });
 
         document.getElementById('downloadBtn').addEventListener('click', () => {
-            if (eventLog.length === 0) return alert("No logs recorded yet!");
-            
             const blob = new Blob([eventLog.join('\n')], { type: 'text/plain' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `bingo-log-${Date.now()}.txt`;
+            a.download = `bingo-log.txt`;
             a.click();
         });
 
-        // Start the app
         initCard();
     </script>
 </body>
