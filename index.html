@@ -104,9 +104,12 @@
             font-weight: bold;
             cursor: pointer;
             user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
             transition: all 0.2s ease;
             word-break: break-word;
             padding: 2px;
+            touch-action: manipulation;
         }
 
         .cell.highlight {
@@ -214,8 +217,43 @@
             cell.id = `cell-${index}`;
             cell.setAttribute('data-clean', word.toLowerCase().trim());
             
+            let pressTimer;
+            let isLongPress = false;
+
+            const startPress = (e) => {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                isLongPress = false;
+                pressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    const newText = prompt("Edit cell text:", cell.textContent);
+                    if (newText !== null && newText.trim() !== "") {
+                        const trimmed = newText.trim();
+                        cell.textContent = trimmed;
+                        cell.setAttribute('data-clean', trimmed.toLowerCase());
+                        keywords[index] = trimmed;
+                        addLog("Edit", `Cell edited to "${trimmed}"`, "log-manual");
+                    }
+                }, 600);
+            };
+
+            const cancelPress = () => {
+                clearTimeout(pressTimer);
+            };
+
+            cell.addEventListener('pointerdown', startPress);
+            cell.addEventListener('pointerup', cancelPress);
+            cell.addEventListener('pointerleave', cancelPress);
+            cell.addEventListener('pointercancel', cancelPress);
+            cell.addEventListener('contextmenu', e => e.preventDefault());
+
             // Manual Click Logic
-            cell.addEventListener('click', () => toggleManual(cell));
+            cell.addEventListener('click', (e) => {
+                if (isLongPress) {
+                    e.preventDefault();
+                    return;
+                }
+                toggleManual(cell);
+            });
             
             grid.appendChild(cell);
         });
