@@ -213,6 +213,9 @@
         keywords.forEach((word, index) => {
             const cell = document.createElement('div');
             cell.className = 'cell';
+            if (word.toUpperCase() === 'FREE') {
+                cell.classList.add('highlight');
+            }
             cell.textContent = word;
             cell.id = `cell-${index}`;
             cell.setAttribute('data-clean', word.toLowerCase().trim());
