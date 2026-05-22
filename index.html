@@ -36,15 +36,7 @@
             align-items: center;
         }
 
-        h1 { margin-bottom: 10px; font-size: 24px; }
-
-        .status-bar {
-            height: 24px;
-            margin-bottom: 15px;
-            font-weight: 600;
-            font-size: 14px;
-            color: #666;
-        }
+        h1 { margin-bottom: 20px; font-size: 24px; }
 
         .controls {
             display: grid;
@@ -230,22 +222,13 @@
             transform: scale(0.9);
         }
 
-        .loader {
-            display: none;
-            color: var(--manual);
-            font-weight: bold;
-            margin-bottom: 10px;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .log-system { color: #2ecc71; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Voice Bingo</h1>
-    <div id="status" class="status-bar">Ready to play</div>
 
     <div class="controls">
         <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
@@ -260,7 +243,6 @@
         <button id="downloadBtn" class="btn-download">💾 Download Log (.txt)</button>
     </div>
 
-    <div id="loader" class="loader">Scanning Bingo Card...</div>
     <img id="imagePreview" alt="Preview">
 
     <!-- Image Modal Overlay -->
@@ -286,7 +268,6 @@
     let recognition;
 
     const grid = document.getElementById('bingoGrid');
-    const status = document.getElementById('status');
     const logArea = document.getElementById('logArea');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
@@ -354,8 +335,7 @@
         preview.src = URL.createObjectURL(file);
         preview.style.display = 'block';
         
-        document.getElementById('loader').style.display = 'block';
-        status.textContent = "Analyzing image...";
+        addLog("System", "⏳ Scanning Bingo Card / Analyzing image...", "log-system");
 
         try {
             const found = await extractBingoWords(file, Tesseract);
@@ -363,17 +343,14 @@
             if (found.length >= 5) {
                 keywords = found.slice(0, 25);
                 initCard();
-                status.textContent = `Card updated: ${found.length} words found.`;
-                addLog("System", `Card updated via OCR scan.`, "log-voice");
+                addLog("System", `✅ Card updated: ${found.length} words found via OCR scan.`, "log-system");
             } else {
                 alert("Couldn't read enough text. Try a clearer photo.");
-                status.textContent = "OCR Failed.";
+                addLog("System", "❌ OCR Failed: Not enough text read.", "log-system");
             }
         } catch (e) {
             console.error(e);
-            status.textContent = "OCR Error.";
-        } finally {
-            document.getElementById('loader').style.display = 'none';
+            addLog("System", "❌ OCR Error occurred.", "log-system");
         }
     }
 
@@ -389,7 +366,7 @@
         recognition.lang = 'en-US';
 
         recognition.onstart = () => {
-            status.textContent = "Microphone Active";
+            addLog("System", "🎤 Microphone Active", "log-system");
             startBtn.disabled = true;
             stopBtn.disabled = false;
         };
@@ -401,7 +378,7 @@
 
         recognition.onend = () => {
             if (!stopBtn.disabled) recognition.start(); // Auto-restart
-            else status.textContent = "Voice Stopped";
+            else addLog("System", "⏹️ Voice Stopped", "log-system");
         };
     }
 
@@ -433,6 +410,7 @@
         div.className = className;
         div.textContent = entry;
         logArea.prepend(div);
+        return div;
     }
 
     document.getElementById('downloadBtn').addEventListener('click', () => {
@@ -487,6 +465,7 @@
 
     // Boot the app
     initCard();
+    addLog("System", "Ready to play", "log-system");
 </script>
 
 </body>
