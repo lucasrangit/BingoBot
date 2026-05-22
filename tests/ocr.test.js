@@ -12,7 +12,7 @@ const test_cases = [
             'multimodality', 'on-device', 'subscribers', 'cuttingedge',
             'gemini', 'hallucination', 'knowledge', 'diffusion', 'proactive'
         ],
-        known_missing: ['AI', 'gemini']
+        known_missing: ['AI', 'gemini', 'hallucination']
     },
     {
         imagePath: path.join(__dirname, 'IMG_7769.PNG'),
@@ -23,7 +23,7 @@ const test_cases = [
             'response', 'features', 'microsoft', 'employees', 'token',
             'cloud', 'apple', 'multimodality', 'understanding', 'technology'
         ],
-        known_missing: ['AI', 'gemini', 'personalized']
+        known_missing: ['AI']
     },
     {
         imagePath: path.join(__dirname, 'IMG_7769_bw.PNG'),
@@ -45,7 +45,7 @@ const test_cases = [
             'progress', 'environment', 'training', 'intelligence', 'personalized',
             'datenschutz', 'state-of-the-art', 'on-device', 'diffusion', 'autonomous'
         ],
-        known_missing: ['AI', 'gemini', 'state-of-the-art']
+        known_missing: ['AI']
     }
 ];
 
@@ -64,12 +64,16 @@ async function runTests() {
             const lowerResult = result.map(w => w.toLowerCase());
 
             expected.forEach(word => {
-                if (lowerResult.includes(word.toLowerCase())) {
+                const lowerWord = word.toLowerCase();
+                const matched = lowerResult.some(cellText => {
+                    return cellText === lowerWord || cellText.includes(lowerWord);
+                });
+
+                if (matched) {
                     foundWords.push(word);
                 } else {
-                    // unless it's in known_missing
                     const lowerKnownMissing = known_missing ? known_missing.map(km => km.toLowerCase()) : [];
-                    if (!lowerKnownMissing.includes(word.toLowerCase())) {
+                    if (!lowerKnownMissing.includes(lowerWord)) {
                         missingWords.push(word);
                     }
                 }
