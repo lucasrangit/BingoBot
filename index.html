@@ -71,7 +71,7 @@
         .btn-file { background-color: #8e44ad; }
         .btn-start { background-color: var(--primary); }
         .btn-stop { background-color: var(--danger); }
-        .btn-download { background-color: #7f8c8d; grid-column: span 2; }
+        .btn-download { background-color: #7f8c8d; }
 
         /* Bingo Card */
         .bingo-grid {
@@ -324,11 +324,9 @@
         <button class="btn-cam" onclick="document.getElementById('cameraInput').click()">📷 Camera</button>
         <button class="btn-file" onclick="document.getElementById('fileInput').click()">📁 Upload</button>
 
-        <button id="startBtn" class="btn-start">🎤 Start Listening</button>
-        <button id="stopBtn" class="btn-stop" disabled>Stop</button>
-
+        <button id="voiceBtn" class="btn-start">🎤 Start Listening</button>
         <button id="downloadBtn" class="btn-download">💾 Download Log (.txt)</button>
-        </div>
+    </div>
 
     <img id="imagePreview" alt="Preview">
 
@@ -365,11 +363,11 @@
     let eventLog = [];
     let recognition;
     let cropperInstance = null;
+    let isListening = false;
 
         const grid = document.getElementById('bingoGrid');
         const logArea = document.getElementById('logArea');
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
 
         // 2. Initialize Grid
         function initCard() {
@@ -517,8 +515,9 @@
 
             recognition.onstart = () => {
                 addLog("System", "🎤 Microphone Active", "log-system");
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
+                isListening = true;
+                voiceBtn.textContent = '⏹️ Stop Listening';
+                voiceBtn.className = 'btn-stop';
             };
 
             recognition.onresult = (event) => {
@@ -527,8 +526,17 @@
             };
 
             recognition.onend = () => {
-                if (!stopBtn.disabled) recognition.start(); // Auto-restart
-                else addLog("System", "⏹️ Voice Stopped", "log-system");
+                if (isListening) {
+                    try {
+                        recognition.start(); // Auto-restart
+                    } catch (e) {
+                        console.error("Auto-restart failed:", e);
+                    }
+                } else {
+                    addLog("System", "⏹️ Voice Stopped", "log-system");
+                    voiceBtn.textContent = '🎤 Start Listening';
+                    voiceBtn.className = 'btn-start';
+                }
             };
         }
 
@@ -573,11 +581,28 @@
         });
 
         // 7. Control Buttons
-        startBtn.addEventListener('click', () => recognition.start());
-        stopBtn.addEventListener('click', () => {
-            stopBtn.disabled = true;
-            startBtn.disabled = false;
-            recognition.stop();
+        voiceBtn.addEventListener('click', () => {
+            if (!recognition) {
+                alert("Speech recognition is not supported in this browser.");
+                return;
+            }
+            if (isListening) {
+                isListening = false;
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.error("Error stopping recognition:", e);
+                }
+            } else {
+                try {
+                    isListening = true;
+                    recognition.start();
+                } catch (e) {
+                    console.error("Error starting recognition:", e);
+                    isListening = false;
+                    addLog("System", "❌ Failed to start speech recognition", "log-system");
+                }
+            }
         });
 
         // 8. Image Zoom Modal Logic
