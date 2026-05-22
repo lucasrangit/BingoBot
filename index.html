@@ -315,7 +315,7 @@
 <body>
 
 <div class="container">
-    <h1>Voice Bingo</h1>
+    <h1>Bingo Bot</h1>
 
     <div class="controls">
         <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
@@ -324,11 +324,11 @@
         <button class="btn-cam" onclick="document.getElementById('cameraInput').click()">📷 Camera</button>
         <button class="btn-file" onclick="document.getElementById('fileInput').click()">📁 Upload</button>
 
-        <button id="startBtn" class="btn-start">🎤 Start Voice</button>
+        <button id="startBtn" class="btn-start">🎤 Start Listening</button>
         <button id="stopBtn" class="btn-stop" disabled>Stop</button>
 
         <button id="downloadBtn" class="btn-download">💾 Download Log (.txt)</button>
-    </div>
+        </div>
 
     <img id="imagePreview" alt="Preview">
 
@@ -357,7 +357,7 @@
         <h3>Activity Log</h3>
         <div id="logArea"></div>
     </div>
-</div>
+    </div>
 
 <script>
     // 1. App State
@@ -366,101 +366,101 @@
     let recognition;
     let cropperInstance = null;
 
-    const grid = document.getElementById('bingoGrid');
-    const logArea = document.getElementById('logArea');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
+        const grid = document.getElementById('bingoGrid');
+        const logArea = document.getElementById('logArea');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
 
-    // 2. Initialize Grid
-    function initCard() {
-        grid.innerHTML = '';
-        keywords.forEach((word, index) => {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            if (word.toUpperCase() === 'FREE') {
-                cell.classList.add('highlight');
-            }
-            cell.textContent = word;
-            cell.id = `cell-${index}`;
-            cell.setAttribute('data-clean', word.toLowerCase().trim());
-
-            let pressTimer;
-            let isLongPress = false;
-
-            const startPress = (e) => {
-                if (e.pointerType === 'mouse' && e.button !== 0) return;
-                isLongPress = false;
-                pressTimer = setTimeout(() => {
-                    isLongPress = true;
-                    const newText = prompt("Edit cell text:", cell.textContent);
-                    if (newText !== null && newText.trim() !== "") {
-                        const trimmed = newText.trim();
-                        cell.textContent = trimmed;
-                        cell.setAttribute('data-clean', trimmed.toLowerCase());
-                        keywords[index] = trimmed;
-                        addLog("Edit", `Cell edited to "${trimmed}"`, "log-manual");
-                    }
-                }, 600);
-            };
-
-            const cancelPress = () => {
-                clearTimeout(pressTimer);
-            };
-
-            cell.addEventListener('pointerdown', startPress);
-            cell.addEventListener('pointerup', cancelPress);
-            cell.addEventListener('pointerleave', cancelPress);
-            cell.addEventListener('pointercancel', cancelPress);
-            cell.addEventListener('contextmenu', e => e.preventDefault());
-
-            // Manual Click Logic
-            cell.addEventListener('click', (e) => {
-                if (isLongPress) {
-                    e.preventDefault();
-                    return;
+        // 2. Initialize Grid
+        function initCard() {
+            grid.innerHTML = '';
+            keywords.forEach((word, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                if (word.toUpperCase() === 'FREE') {
+                    cell.classList.add('highlight');
                 }
-                toggleManual(cell);
+                cell.textContent = word;
+                cell.id = `cell-${index}`;
+                cell.setAttribute('data-clean', word.toLowerCase().trim());
+
+                let pressTimer;
+                let isLongPress = false;
+
+                const startPress = (e) => {
+                    if (e.pointerType === 'mouse' && e.button !== 0) return;
+                    isLongPress = false;
+                    pressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        const newText = prompt("Edit cell text:", cell.textContent);
+                        if (newText !== null && newText.trim() !== "") {
+                            const trimmed = newText.trim();
+                            cell.textContent = trimmed;
+                            cell.setAttribute('data-clean', trimmed.toLowerCase());
+                            keywords[index] = trimmed;
+                            addLog("Edit", `Cell edited to "${trimmed}"`, "log-manual");
+                        }
+                    }, 600);
+                };
+
+                const cancelPress = () => {
+                    clearTimeout(pressTimer);
+                };
+
+                cell.addEventListener('pointerdown', startPress);
+                cell.addEventListener('pointerup', cancelPress);
+                cell.addEventListener('pointerleave', cancelPress);
+                cell.addEventListener('pointercancel', cancelPress);
+                cell.addEventListener('contextmenu', e => e.preventDefault());
+
+                // Manual Click Logic
+                cell.addEventListener('click', (e) => {
+                    if (isLongPress) {
+                        e.preventDefault();
+                        return;
+                    }
+                    toggleManual(cell);
+                });
+
+                grid.appendChild(cell);
+            });
+        }
+
+        // 3. OCR Image Processing
+        async function handleImage(file) {
+            if (!file) return;
+
+            const cropModal = document.getElementById('cropModal');
+            const cropImage = document.getElementById('cropImage');
+
+            // Revoke old object URL if any
+            if (cropImage.src) {
+                URL.revokeObjectURL(cropImage.src);
+            }
+
+            cropImage.src = URL.createObjectURL(file);
+            cropModal.style.display = 'flex';
+
+            if (cropperInstance) {
+                cropperInstance.destroy();
+            }
+
+            cropperInstance = new Cropper(cropImage, {
+                viewMode: 1,
+                autoCropArea: 0.9,
+                responsive: true,
+                restore: false,
+                modal: true,
+                guides: true,
+                highlight: false,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
             });
 
-            grid.appendChild(cell);
-        });
-    }
-
-    // 3. OCR Image Processing
-    async function handleImage(file) {
-        if (!file) return;
-
-        const cropModal = document.getElementById('cropModal');
-        const cropImage = document.getElementById('cropImage');
-        
-        // Revoke old object URL if any
-        if (cropImage.src) {
-            URL.revokeObjectURL(cropImage.src);
-        }
-        
-        cropImage.src = URL.createObjectURL(file);
-        cropModal.style.display = 'flex';
-
-        if (cropperInstance) {
-            cropperInstance.destroy();
-        }
-
-        cropperInstance = new Cropper(cropImage, {
-            viewMode: 1,
-            autoCropArea: 0.9,
-            responsive: true,
-            restore: false,
-            modal: true,
-            guides: true,
-            highlight: false,
-            cropBoxMovable: true,
-            cropBoxResizable: true,
-            toggleDragModeOnDblclick: false,
-        });
-
-        // Set up the click handlers
-        document.getElementById('cropConfirmBtn').onclick = () => {
-            if (!cropperInstance) return;
+            // Set up the click handlers
+            document.getElementById('cropConfirmBtn').onclick = () => {
+                if (!cropperInstance) return;
 
             const canvas = cropperInstance.getCroppedCanvas();
             canvas.toBlob(async (blob) => {
@@ -493,130 +493,130 @@
             }, 'image/png');
         };
 
-        document.getElementById('cropCancelBtn').onclick = () => {
-            if (cropperInstance) {
-                cropperInstance.destroy();
-                cropperInstance = null;
+            document.getElementById('cropCancelBtn').onclick = () => {
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                }
+                cropModal.style.display = 'none';
+                document.getElementById('cameraInput').value = '';
+                document.getElementById('fileInput').value = '';
+            };
+        }
+
+        document.getElementById('cameraInput').addEventListener('change', (e) => handleImage(e.target.files[0]));
+        document.getElementById('fileInput').addEventListener('change', (e) => handleImage(e.target.files[0]));
+
+        // 4. Voice Recognition Logic
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                addLog("System", "🎤 Microphone Active", "log-system");
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+                checkVoiceMatch(transcript);
+            };
+
+            recognition.onend = () => {
+                if (!stopBtn.disabled) recognition.start(); // Auto-restart
+                else addLog("System", "⏹️ Voice Stopped", "log-system");
+            };
+        }
+
+        function checkVoiceMatch(text) {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                const word = cell.getAttribute('data-clean');
+                if (text.includes(word) && !cell.classList.contains('highlight')) {
+                    cell.classList.add('highlight');
+                    addLog("Voice", `Heard "${text}" -> Matched "${cell.textContent}"`, "log-voice");
+                }
+            });
+        }
+
+        // 5. Manual Interaction
+        function toggleManual(cell) {
+            const active = cell.classList.toggle('highlight');
+            const action = active ? "SET" : "RESET";
+            addLog("Manual", `${action}: "${cell.textContent}"`, "log-manual");
+        }
+
+        // 6. Logging & Exports
+        function addLog(type, message, className) {
+            const time = new Date().toLocaleTimeString();
+            const entry = `[${time}] ${type}: ${message}`;
+            eventLog.push(entry);
+
+            const div = document.createElement('div');
+            div.className = className;
+            div.textContent = entry;
+            logArea.prepend(div);
+            return div;
+        }
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (eventLog.length === 0) return alert("Log is empty!");
+            const blob = new Blob([eventLog.join('\n')], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `bingo-log-${Date.now()}.txt`;
+            a.click();
+        });
+
+        // 7. Control Buttons
+        startBtn.addEventListener('click', () => recognition.start());
+        stopBtn.addEventListener('click', () => {
+            stopBtn.disabled = true;
+            startBtn.disabled = false;
+            recognition.stop();
+        });
+
+        // 8. Image Zoom Modal Logic
+        const imagePreview = document.getElementById('imagePreview');
+        const imageModal = document.getElementById('imageModal');
+        const enlargedImage = document.getElementById('enlargedImage');
+        const closeModal = document.getElementById('closeModal');
+
+        function openModal() {
+            if (!imagePreview.src) return;
+            enlargedImage.src = imagePreview.src;
+            imageModal.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            document.addEventListener('keydown', handleEscKey);
+        }
+
+        function closeModalView() {
+            imageModal.classList.remove('active');
+            document.body.style.overflow = ''; // Restore body scrolling
+            document.removeEventListener('keydown', handleEscKey);
+        }
+
+        function handleEscKey(e) {
+            if (e.key === 'Escape') {
+                closeModalView();
             }
-            cropModal.style.display = 'none';
-            document.getElementById('cameraInput').value = '';
-            document.getElementById('fileInput').value = '';
-        };
-    }
+        }
 
-    document.getElementById('cameraInput').addEventListener('change', (e) => handleImage(e.target.files[0]));
-    document.getElementById('fileInput').addEventListener('change', (e) => handleImage(e.target.files[0]));
-
-    // 4. Voice Recognition Logic
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-
-        recognition.onstart = () => {
-            addLog("System", "🎤 Microphone Active", "log-system");
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-        };
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
-            checkVoiceMatch(transcript);
-        };
-
-        recognition.onend = () => {
-            if (!stopBtn.disabled) recognition.start(); // Auto-restart
-            else addLog("System", "⏹️ Voice Stopped", "log-system");
-        };
-    }
-
-    function checkVoiceMatch(text) {
-        const cells = document.querySelectorAll('.cell');
-        cells.forEach(cell => {
-            const word = cell.getAttribute('data-clean');
-            if (text.includes(word) && !cell.classList.contains('highlight')) {
-                cell.classList.add('highlight');
-                addLog("Voice", `Heard "${text}" -> Matched "${cell.textContent}"`, "log-voice");
+        imagePreview.addEventListener('click', openModal);
+        imageModal.addEventListener('click', (e) => {
+            if (e.target === imageModal || e.target === closeModal) {
+                closeModalView();
             }
         });
-    }
 
-    // 5. Manual Interaction
-    function toggleManual(cell) {
-        const active = cell.classList.toggle('highlight');
-        const action = active ? "SET" : "RESET";
-        addLog("Manual", `${action}: "${cell.textContent}"`, "log-manual");
-    }
-
-    // 6. Logging & Exports
-    function addLog(type, message, className) {
-        const time = new Date().toLocaleTimeString();
-        const entry = `[${time}] ${type}: ${message}`;
-        eventLog.push(entry);
-
-        const div = document.createElement('div');
-        div.className = className;
-        div.textContent = entry;
-        logArea.prepend(div);
-        return div;
-    }
-
-    document.getElementById('downloadBtn').addEventListener('click', () => {
-        if (eventLog.length === 0) return alert("Log is empty!");
-        const blob = new Blob([eventLog.join('\n')], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `bingo-log-${Date.now()}.txt`;
-        a.click();
-    });
-
-    // 7. Control Buttons
-    startBtn.addEventListener('click', () => recognition.start());
-    stopBtn.addEventListener('click', () => {
-        stopBtn.disabled = true;
-        startBtn.disabled = false;
-        recognition.stop();
-    });
-
-    // 8. Image Zoom Modal Logic
-    const imagePreview = document.getElementById('imagePreview');
-    const imageModal = document.getElementById('imageModal');
-    const enlargedImage = document.getElementById('enlargedImage');
-    const closeModal = document.getElementById('closeModal');
-
-    function openModal() {
-        if (!imagePreview.src) return;
-        enlargedImage.src = imagePreview.src;
-        imageModal.classList.add('active');
-        document.body.style.overflow = 'hidden'; // Prevent background scrolling
-        document.addEventListener('keydown', handleEscKey);
-    }
-
-    function closeModalView() {
-        imageModal.classList.remove('active');
-        document.body.style.overflow = ''; // Restore body scrolling
-        document.removeEventListener('keydown', handleEscKey);
-    }
-
-    function handleEscKey(e) {
-        if (e.key === 'Escape') {
-            closeModalView();
-        }
-    }
-
-    imagePreview.addEventListener('click', openModal);
-    imageModal.addEventListener('click', (e) => {
-        if (e.target === imageModal || e.target === closeModal) {
-            closeModalView();
-        }
-    });
-
-    // Boot the app
-    initCard();
-    addLog("System", "Ready to play", "log-system");
-</script>
+        // Boot the app
+        initCard();
+        addLog("System", "Ready to play", "log-system");
+    </script>
 
 </body>
 </html>
