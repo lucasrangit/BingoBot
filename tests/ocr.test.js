@@ -4,7 +4,7 @@ const path = require('path');
 
 const test_cases = [
     {
-        imagePath: path.join(__dirname, 'IMG_7755.PNG'),
+        imagePath: path.join(__dirname, 'google_ai_buzzword_bingo.png'),
         expected: [
             'breakthroughs', 'thinking', 'learning', 'applications', 'technology',
             'transgender', 'parameters', 'foundation', 'beer', 'leaderboard',
@@ -15,7 +15,7 @@ const test_cases = [
         known_missing: ['AI', 'gemini', 'hallucination']
     },
     {
-        imagePath: path.join(__dirname, 'IMG_7769.PNG'),
+        imagePath: path.join(__dirname, 'tech_buzzword_bingo_photo.png'),
         expected: [
             'benchmarks', 'workspace', 'personalized', 'possibilities', 'on-device',
             'vertex', 'learning', 'collaboration', 'agents', 'flutter',
@@ -26,7 +26,7 @@ const test_cases = [
         known_missing: ['AI']
     },
     {
-        imagePath: path.join(__dirname, 'IMG_7769_bw.PNG'),
+        imagePath: path.join(__dirname, 'tech_buzzword_bingo_photo_bw.png'),
         expected: [
             'benchmarks', 'workspace', 'personalized', 'possibilities', 'on-device',
             'vertex', 'learning', 'collaboration', 'agents', 'flutter',
@@ -46,6 +46,96 @@ const test_cases = [
             'datenschutz', 'state-of-the-art', 'on-device', 'diffusion', 'autonomous'
         ],
         known_missing: ['AI']
+    },
+    {
+        imagePath: path.join(__dirname, 'blue_buzzword_bingo_grid.png'),
+        expected: [
+            'BUY', 'URL', 'Wiggle Room', 'Circle', 'Ladder Up', 'Pain Points',
+            'Pushback', 'Back the Ask', 'Low-Hanging', 'Fruit', 'Move the Needle',
+            'Let\'s Unpack', 'Granular', 'High Level', 'Pressure Test',
+            'We\'re Aligned', 'Set Expectations', 'Wheelhouse', 'Net-Net', 'Deep Dive'
+        ],
+        known_missing: []
+    },
+    {
+        imagePath: path.join(__dirname, 'business_buzzword_bingo_classic.jpg'),
+        expected: [
+            'deliverable', 'category killer', 'rubber meets the road', 'ROI', 'going viral',
+            'customer focused', 'phone it in', 'manage expectations', 'perfect storm',
+            'hope is not strategy', 'blue sky', 'FREE', 'leave money on the table',
+            'square the circle', 'go-to-market', 'strategy', 'client mind-share',
+            'under the bus', 'ballpark', 'best practice', 'low-hanging fruit',
+            'end of the day', 'sharpen our pencils', 'parking lot', 'knock it out of the park'
+        ],
+        known_missing: []
+    },
+    {
+        imagePath: path.join(__dirname, 'buzzword_bingo_social_phrases.png'),
+        expected: [
+            'OK', 'At the end of the Day', 'Turn Around', 'I\'m Not Being Funny But',
+            'Going Forward', 'Do You Get Me', 'Cut a Story Short', 'Stand With'
+        ],
+        known_missing: []
+    },
+    {
+        imagePath: path.join(__dirname, 'business_buzzword_bingo_retro.jpg'),
+        expected: [
+            'close the loop', 'run with this', 'best practice', 'perfect storm',
+            '80-20 rule', 'square the circle', '64000 question', 'ballpark',
+            'sharpen our pencils', 'FREE', 'win-win', 'rubber meets the road',
+            'swot analysis', 'hope is not a strategy', 'paradigm shift',
+            'low hanging fruit', 'plug and play', 'step up to the plate', 'cash cow'
+        ],
+        known_missing: []
+    },
+    {
+        imagePath: path.join(__dirname, 'classic_buzzword_bingo.jpg'),
+        expected: [
+            'action item', 'exit strategy', 'synergy', 'learnings', 'best practice',
+            'buy in', 'helicopter view', 'proactive', 'blue sky thinking', 'holistic',
+            'Free space', 'leadership', 'on the radar', 'low-hanging fruit', 'big picture',
+            'value added', 'strategic', 'elevator pitch', 'outside the box', 'can-do attitude',
+            'touch base with', 'alignment', 'incentivise'
+        ],
+        known_missing: []
+    },
+    {
+        imagePath: path.join(__dirname, 'corporate_buzzword_bingo.jpg'),
+        expected: [
+            'Prioritize', 'Fostering', 'Reach Out', 'Consolidate', 'synergy', 'Culture',
+            'Headwinds', 'Alignment', 'FREE', 'Boots on the Ground', 'Current State',
+            'Mission', 'Core Value', 'Strategy', 'Leverage', 'Future State', 'In the Red',
+            'Big Picture'
+        ],
+        known_missing: []
+    },
+    {
+        imagePath: path.join(__dirname, 'office_buzzword_bingo.jpg'),
+        expected: [
+            'Touch base', 'Circle back', 'Leverage', 'holistic approach', 'Agile', 'scalable',
+            'Synergy', 'At the end of the day', 'FREE', 'Alignment', 'Think outside', 'win-win',
+            'Best practice', 'Action item', 'the box', 'Move the needle', 'deep dive',
+            'Optimize', 'Low hanging fruit', 'Seamless', 'paradigm'
+        ],
+        known_missing: []
+    },
+    {
+        imagePath: path.join(__dirname, 'radial_buzzword_bingo.jpg'),
+        expected: [
+            'scalable', 'solution', 'Move the needle', 'KPIs', 'OKRs', 'hard stop', 'mute',
+            'Reinvent the', 'Deep dive', 'Pain points', 'Core values', 'The report is wrong',
+            'Circle back', 'Traction', '4PL', 'Boots on the ground', 'Hit the ground running',
+            'Growth strategy', 'You\'re on mute', 'Return on Investment', 'Think outside the box',
+            'Lots of moving parts'
+        ],
+        known_missing: []
+    },
+    {
+        imagePath: path.join(__dirname, 'simple_small_free_space_grid.png'),
+        expected: [
+            'FREE SPACE', 'message', 'Games Industry', 'culture'
+        ],
+        known_missing: []
     }
 ];
 
