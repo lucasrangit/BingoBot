@@ -150,6 +150,84 @@
             display: none;
             margin-bottom: 15px;
             border: 2px solid white;
+            cursor: zoom-in;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.25s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.25s ease;
+        }
+
+        #imagePreview:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        }
+
+        /* Image modal overlay */
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(18, 24, 38, 0.85); /* Semi-transparent premium dark */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .image-modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .image-modal-content {
+            max-width: 90%;
+            max-height: 85%;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            transform: scale(0.92);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 3px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .image-modal.active .image-modal-content {
+            transform: scale(1);
+        }
+
+        .image-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: background-color 0.2s, transform 0.2s, color 0.2s;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .image-modal-close:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .image-modal-close:active {
+            transform: scale(0.9);
         }
 
         .loader {
@@ -184,6 +262,12 @@
 
     <div id="loader" class="loader">Scanning Bingo Card...</div>
     <img id="imagePreview" alt="Preview">
+
+    <!-- Image Modal Overlay -->
+    <div id="imageModal" class="image-modal">
+        <button class="image-modal-close" id="closeModal" aria-label="Close enlarged view">&times;</button>
+        <img id="enlargedImage" class="image-modal-content" alt="Enlarged Preview">
+    </div>
 
     <div class="bingo-grid" id="bingoGrid">
         <!-- JS generates cells here -->
@@ -366,6 +450,39 @@
         stopBtn.disabled = true;
         startBtn.disabled = false;
         recognition.stop();
+    });
+
+    // 8. Image Zoom Modal Logic
+    const imagePreview = document.getElementById('imagePreview');
+    const imageModal = document.getElementById('imageModal');
+    const enlargedImage = document.getElementById('enlargedImage');
+    const closeModal = document.getElementById('closeModal');
+
+    function openModal() {
+        if (!imagePreview.src) return;
+        enlargedImage.src = imagePreview.src;
+        imageModal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        document.addEventListener('keydown', handleEscKey);
+    }
+
+    function closeModalView() {
+        imageModal.classList.remove('active');
+        document.body.style.overflow = ''; // Restore body scrolling
+        document.removeEventListener('keydown', handleEscKey);
+    }
+
+    function handleEscKey(e) {
+        if (e.key === 'Escape') {
+            closeModalView();
+        }
+    }
+
+    imagePreview.addEventListener('click', openModal);
+    imageModal.addEventListener('click', (e) => {
+        if (e.target === imageModal || e.target === closeModal) {
+            closeModalView();
+        }
     });
 
     // Boot the app
