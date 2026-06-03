@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Bingo Pro</title>
+    <title>BingoBot</title>
     <!-- OCR Library -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="ocr.js"></script>
@@ -320,7 +320,7 @@
 <body>
 
 <div class="container">
-    <h1>Bingo Bot</h1>
+    <h1>BingoBot</h1>
 
     <div class="controls">
         <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
@@ -367,7 +367,7 @@
 
 <script>
     // 1. App State
-    let keywords = ["B1", "B2", "B3", "B4", "B5", "I1", "I2", "I3", "I4", "I5", "N1", "N2", "FREE", "N4", "N5", "G1", "G2", "G3", "G4", "G5", "O1", "O2", "O3", "O4", "O5"];
+    let keywords = ["B1", "I1", "N1", "G1", "O1", "B2", "I2", "N2", "G2", "O2", "B3", "I3", "FREE", "G3", "O3", "B4", "I4", "N4", "G4", "O4", "B5", "I5", "N5", "G5", "O5"];
     let eventLog = [];
     let recognition;
     let cropperInstance = null;
