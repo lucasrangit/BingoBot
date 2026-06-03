@@ -1,8 +1,8 @@
 # BingoBot
 A bot that plays buzzword bingo on a 5x5 grid for you.
 
-Start by importing an image of the bingo card, crop the image to the 5x5 grid, wait for the bot to OCR the card, and manually correct any OCR errors.
-Start the microphone input and the bot will automatically highlight the words as they are spoken.
+1. Start by importing an image of the bingo card, crop the image to the 5x5 grid, wait for the bot to OCR the card, and manually correct any OCR errors by clicking and holding on the cell.
+2. Start the microphone input and the bot will automatically highlight the words as they are spoken.
 
 ## Running Tests
 
