@@ -488,7 +488,7 @@
                         keywords = found.slice(0, 25);
                         initCard();
                         const nonEmptyCount = found.filter(w => w.trim().length > 0).length;
-                        addLog("System", `✅ Card updated: ${nonEmptyCount}/25 cells successfully read via OCR scan.`, "log-system");
+                        addLog("System", `✅ OCR scanned ${nonEmptyCount}/25 cells successfully.`, "log-system");
                     } else {
                         alert("Couldn't read enough text. Try a clearer photo.");
                         addLog("System", "❌ OCR Failed: Not enough text read.", "log-system");
@@ -542,7 +542,7 @@
                         console.error("Auto-restart failed:", e);
                     }
                 } else {
-                    addLog("System", "⏹️ Voice Stopped", "log-system");
+                    addLog("System", "⏹️ Microphone Inactive", "log-system");
                     voiceBtn.textContent = '🎤 Start Listening';
                     voiceBtn.className = 'btn-start';
                 }
@@ -666,7 +666,6 @@
 
         // Boot the app
         initCard();
-        addLog("System", "Ready to play", "log-system");
     </script>
 
 </body>
