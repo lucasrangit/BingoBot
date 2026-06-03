@@ -7,6 +7,7 @@
     <!-- OCR Library -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="ocr.js"></script>
+    <script src="match.js"></script>
     <!-- Cropper.js Library -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -227,6 +228,10 @@
 
         .log-system { color: #2ecc71; }
 
+        /* Speech Debug Button Option */
+        .btn-debug-off { background-color: #7f8c8d; }
+        .btn-debug-on { background-color: var(--manual); }
+
         /* Crop Modal Styles */
         .crop-modal {
             display: none;
@@ -355,6 +360,9 @@
         <h3>Activity Log</h3>
         <div id="logArea"></div>
     </div>
+
+    <!-- Speech Debug Option -->
+    <button id="speechDebugBtn" class="btn-debug-off" style="width: 100%; margin-top: 20px;">⚙️ Enable Speech Debug</button>
     </div>
 
 <script>
@@ -364,6 +372,7 @@
     let recognition;
     let cropperInstance = null;
     let isListening = false;
+    let isSpeechDebug = false;
 
         const grid = document.getElementById('bingoGrid');
         const logArea = document.getElementById('logArea');
@@ -470,7 +479,7 @@
                 preview.src = URL.createObjectURL(blob);
                 preview.style.display = 'block';
 
-                addLog("System", "⏳ Scanning Bingo Card / Analyzing image...", "log-system");
+                addLog("System", "⏳ Scanning Bingo Card ...", "log-system");
 
                 try {
                     const found = await extractBingoWords(blob, Tesseract);
@@ -521,7 +530,7 @@
             };
 
             recognition.onresult = (event) => {
-                const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+                const transcript = event.results[event.results.length - 1][0].transcript.trim();
                 checkVoiceMatch(transcript);
             };
 
@@ -541,10 +550,15 @@
         }
 
         function checkVoiceMatch(text) {
+            const cleanText = text.toLowerCase().trim();
+            if (isSpeechDebug) {
+                addLog("Voice", `Heard: "${text}"`, "log-voice");
+            }
+
             const cells = document.querySelectorAll('.cell');
             cells.forEach(cell => {
                 const word = cell.getAttribute('data-clean');
-                if (text.includes(word) && !cell.classList.contains('highlight')) {
+                if (isMatch(cleanText, word) && !cell.classList.contains('highlight')) {
                     cell.classList.add('highlight');
                     addLog("Voice", `Heard "${text}" -> Matched "${cell.textContent}"`, "log-voice");
                 }
@@ -635,6 +649,18 @@
         imageModal.addEventListener('click', (e) => {
             if (e.target === imageModal || e.target === closeModal) {
                 closeModalView();
+            }
+        });
+
+        const speechDebugBtn = document.getElementById('speechDebugBtn');
+        speechDebugBtn.addEventListener('click', () => {
+            isSpeechDebug = !isSpeechDebug;
+            if (isSpeechDebug) {
+                speechDebugBtn.textContent = '⚙️ Disable Speech Debug';
+                speechDebugBtn.className = 'btn-debug-on';
+            } else {
+                speechDebugBtn.textContent = '⚙️ Enable Speech Debug';
+                speechDebugBtn.className = 'btn-debug-off';
             }
         });
 
