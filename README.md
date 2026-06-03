@@ -6,12 +6,10 @@ Start the microphone input and the bot will automatically highlight the words as
 
 ## Running Tests
 
-The application's OCR text extraction logic is decoupled from the DOM and can be tested locally using Node.js.
+The application's logic is decoupled from the DOM and can be tested locally using Node.js.
 
-To run the unit test:
+To run all tests:
 
 ```bash
-node tests/ocr.test.js
+npm test
 ```
-
-This will execute a test against a mocked Tesseract instance to verify that the text cleaning and extraction logic works properly without needing the real Tesseract engine.
