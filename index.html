@@ -7,7 +7,7 @@
     <!-- OCR Library -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="ocr.js"></script>
-    <script src="match.js"></script>
+    <script src="speech.js"></script>
     <!-- Cropper.js Library -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -369,9 +369,8 @@
     // 1. App State
     let keywords = ["B1", "I1", "N1", "G1", "O1", "B2", "I2", "N2", "G2", "O2", "B3", "I3", "FREE", "G3", "O3", "B4", "I4", "N4", "G4", "O4", "B5", "I5", "N5", "G5", "O5"];
     let eventLog = [];
-    let recognition;
+    let speechManager;
     let cropperInstance = null;
-    let isListening = false;
     let isSpeechDebug = false;
 
         const grid = document.getElementById('bingoGrid');
@@ -514,56 +513,43 @@
         document.getElementById('cameraInput').addEventListener('change', (e) => handleImage(e.target.files[0]));
         document.getElementById('fileInput').addEventListener('change', (e) => handleImage(e.target.files[0]));
 
-        // 4. Voice Recognition Logic
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
-
-            recognition.onstart = () => {
-                addLog("System", "🎤 Microphone Active", "log-system");
-                isListening = true;
-                voiceBtn.textContent = '⏹️ Stop Listening';
-                voiceBtn.className = 'btn-stop';
-            };
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[event.results.length - 1][0].transcript.trim();
-                checkVoiceMatch(transcript);
-            };
-
-            recognition.onend = () => {
-                if (isListening) {
-                    try {
-                        recognition.start(); // Auto-restart
-                    } catch (e) {
-                        console.error("Auto-restart failed:", e);
-                    }
+        // 4. Speech Recognition Logic
+        speechManager = new BingoSpeechManager({
+            voiceBtn: voiceBtn,
+            getWords: () => {
+                const cells = document.querySelectorAll('.cell');
+                const words = [];
+                cells.forEach((cell, index) => {
+                    words.push({
+                        word: cell.getAttribute('data-clean') || '',
+                        cell: cell,
+                        index: index
+                    });
+                });
+                return words;
+            },
+            onMatch: (transcript, word, cell, index) => {
+                if (!cell.classList.contains('highlight')) {
+                    cell.classList.add('highlight');
+                    addLog("Voice", `Heard "${transcript}" -> Matched "${cell.textContent}"`, "log-voice");
+                }
+            },
+            onLog: (type, message) => {
+                if (type === "Voice" && !isSpeechDebug) return;
+                let className = "log-system";
+                if (type === "Voice") className = "log-voice";
+                addLog(type, message, className);
+            },
+            onStatusChange: (listening) => {
+                if (listening) {
+                    voiceBtn.textContent = '⏹️ Stop Listening';
+                    voiceBtn.className = 'btn-stop';
                 } else {
-                    addLog("System", "⏹️ Microphone Inactive", "log-system");
                     voiceBtn.textContent = '🎤 Start Listening';
                     voiceBtn.className = 'btn-start';
                 }
-            };
-        }
-
-        function checkVoiceMatch(text) {
-            const cleanText = text.toLowerCase().trim();
-            if (isSpeechDebug) {
-                addLog("Voice", `Heard: "${text}"`, "log-voice");
             }
-
-            const cells = document.querySelectorAll('.cell');
-            cells.forEach(cell => {
-                const word = cell.getAttribute('data-clean');
-                if (isMatch(cleanText, word) && !cell.classList.contains('highlight')) {
-                    cell.classList.add('highlight');
-                    addLog("Voice", `Heard "${text}" -> Matched "${cell.textContent}"`, "log-voice");
-                }
-            });
-        }
+        });
 
         // 5. Manual Interaction
         function toggleManual(cell) {
@@ -594,30 +580,7 @@
             a.click();
         });
 
-        // 7. Control Buttons
-        voiceBtn.addEventListener('click', () => {
-            if (!recognition) {
-                alert("Speech recognition is not supported in this browser.");
-                return;
-            }
-            if (isListening) {
-                isListening = false;
-                try {
-                    recognition.stop();
-                } catch (e) {
-                    console.error("Error stopping recognition:", e);
-                }
-            } else {
-                try {
-                    isListening = true;
-                    recognition.start();
-                } catch (e) {
-                    console.error("Error starting recognition:", e);
-                    isListening = false;
-                    addLog("System", "❌ Failed to start speech recognition", "log-system");
-                }
-            }
-        });
+        // 7. Control Buttons (Handled by BingoSpeechManager)
 
         // 8. Image Zoom Modal Logic
         const imagePreview = document.getElementById('imagePreview');

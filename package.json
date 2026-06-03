@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "node tests/match.test.js && node tests/ocr.test.js"
+    "test": "node tests/speech.test.js && node tests/ocr.test.js"
   },
   "repository": {
     "type": "git",

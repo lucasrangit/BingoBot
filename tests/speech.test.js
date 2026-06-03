@@ -1,4 +1,4 @@
-const { isMatch } = require('../match.js');
+const { isMatch } = require('../speech.js');
 
 const tests = [
     { transcript: "I heard B 1", cell: "b1", expected: true },
